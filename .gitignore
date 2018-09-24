@@ -1,0 +1,12 @@
+
+\.idea/
+
+\.ipynb_checkpoints/
+
+venv/bin/
+
+venv/lib/python3\.6/site-packages/
+
+venv/
+
+__pycache__/
