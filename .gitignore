@@ -10,3 +10,5 @@ venv/lib/python3\.6/site-packages/
 venv/
 
 __pycache__/
+
+nbdepv\.egg-info/
