@@ -11,17 +11,23 @@ define([
 	    var nb = Jupyter.notebook;
 
 	    //Init metadata
-        nb.metadata.dependencies = {};
+        nb.metadata.dependencies = nb.metadata.dependencies || [];
 
 	    nb.events.on('kernel_ready.Kernel',function(event,data) {
-	        var comm_manager=Jupyter.notebook.kernel.comm_manager;
+
+	        var comm_manager = Jupyter.notebook.kernel.comm_manager;
+
+	        var idx = nb.metadata.dependencies;
+	        var session_id = Jupyter.notebook.kernel.id;
+	        var session_obj = {'session':session_id,'deps':{}};
+	        nb.metadata.dependencies.push(session_obj);
 
             var handle_msg=function(msg){
                 console.log(msg);
                 var data = msg.content.data;
                 Object.keys(data).forEach(
                     function (key) {
-                        nb.metadata.dependencies[key] = data[key];
+                        session_obj.deps[key] = data[key];
                     }
                 )
             };
