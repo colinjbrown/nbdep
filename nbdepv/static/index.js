@@ -19,7 +19,19 @@ define([
 
 	        var idx = nb.metadata.dependencies;
 	        var session_id = Jupyter.notebook.kernel.id;
-	        var session_obj = {'session':session_id,'deps':{}};
+
+	        var currentdate = new Date();
+
+	        var current_session = (currentdate.getMonth()+1)  + "/"
+                + currentdate.getDate() + "/"
+                + currentdate.getFullYear() + " @ "
+                + currentdate.getHours() + ":"
+                + currentdate.getMinutes() + ":"
+                + currentdate.getSeconds();
+
+
+
+	        var session_obj = {'session':session_id,'session_created':current_session,'deps':{}};
 	        nb.metadata.dependencies.push(session_obj);
 
             var handle_msg=function(msg){
