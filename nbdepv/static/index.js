@@ -35,7 +35,6 @@ define([
 	        nb.metadata.dependencies.push(session_obj);
 
             var handle_msg=function(msg){
-                console.log(msg);
                 var data = msg.content.data;
                 Object.keys(data).forEach(
                     function (key) {
@@ -49,12 +48,12 @@ define([
                 comm.on_msg(handle_msg)
             });
 
-	        var text = '%load_ext nbdepv';
-	        var callbacks = null;
-	        var msg_id = nb.kernel.execute(text, callbacks, {silent: false, store_history: true,
-            stop_on_error : true});
-	        console.log(msg_id);
-            console.log("Success");
+	        // var text = '%load_ext nbdepv';
+	        // var callbacks = null;
+	        // var msg_id = nb.kernel.execute(text, callbacks, {silent: false, store_history: true,
+            // stop_on_error : true});
+	        // console.log(msg_id);
+            // console.log("Success");
         });
     }
 

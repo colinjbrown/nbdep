@@ -13,6 +13,17 @@ This package also includes a nbextension that writes out a pip requirements file
 
 `jupyter nbextension enable nbdepv --py --[user|sys-prefix]`
 
+This package relies on IPython magics so either
+
+`%load_ext nbdepv` 
+
+is required upon opening each notebook; the nbextension doesn't handle any events if the IPython extension is not enabled.
+
+To ensure that the extension is loaded each time you open a new notebook then you should edit your configuration file to include the following line:
+
+`c.InteractiveShellApp.extensions = [
+    'nbdepv'
+]`
 
 ## Add bundler extension for requirements.txt deployment
 
