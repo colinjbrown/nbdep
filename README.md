@@ -4,6 +4,7 @@ This module automatically grabs and saves any imported modules into the metadata
 
 The actual module is implemented as an IPython extension that hooks onto sys.modules and performs a set difference on the modules that are imported and then passes it back to the Nbextension on the Javascript side which saves everything into metadata.
 
+This package also includes a nbextension that writes out a pip requirements file based on the most up to date version of the dependencies.
 
 ## Installation
 `pip install .`
@@ -13,4 +14,7 @@ The actual module is implemented as an IPython extension that hooks onto sys.mod
 `jupyter nbextension enable nbdepv --py --[user|sys-prefix]`
 
 
+## Add bundler extension for requirements.txt deployment
+
+`jupyter bundlerextension enable --sys-prefix --py nbdepv`
 

@@ -71,6 +71,19 @@ def load_ipython_extension(ip):
     iw = ImportWatcher(ip)
     ip.events.register('post_execute', iw.grab_modules)
 
-
+def _jupyter_bundlerextension_paths():
+    """Declare bundler extensions provided by this package."""
+    return [
+    {
+        # unique bundler name
+        "name": "reqs-export",
+        # module containing bundle function
+        "module_name": "nbdepv.pip_export",
+        # human-redable menu item label
+        "label": "Produce requirements.txt",
+        # group under 'deploy' or 'download' menu
+        "group": "deploy",
+    }
+    ]
 # Can do something with unload here later on
 # def unload_ipython_extension(ipython):
