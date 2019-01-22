@@ -154,7 +154,11 @@ def export_reqs(file,fname):
             #Have to convert to a list otherwise will throw a bson error
             for version in versions.find({'package':{'$in':list(pip_reqs.keys())}}):
                 package = version['package']
-                if pip_reqs[package] in version['versions']:
+                if package in libraries:
+                    continue
+                #TODO: Create a better backend query for this
+                v_list = [v['version'] for v in version['versions']]
+                if pip_reqs[package] in v_list:
                     f.write(package + '==' + pip_reqs[package] + '\n')
                 else:
                     f.write(package + '\n')
