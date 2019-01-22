@@ -152,13 +152,12 @@ def export_reqs(file,fname):
     with open('requirements.txt', 'w') as f:
         if versions != None:
             #Have to convert to a list otherwise will throw a bson error
-            for version in versions.find({'package':{'$in':list(pip_reqs.keys())}}):
-                package = version['package']
+            for version in versions.aggregate([{'$match':{'package':{'$in':list(pip_reqs.keys())}}},{'$unwind':'$versions'},{'$group':{'_id':'$package','versions':{'$addToSet':'$versions.version'}}}]):
+                #Mongo has some weird requirement for aggregation objects so we use _id
+                package = version['_id']
                 if package in libraries:
                     continue
-                #TODO: Create a better backend query for this
-                v_list = [v['version'] for v in version['versions']]
-                if pip_reqs[package] in v_list:
+                if pip_reqs[package] in version['versions']:
                     f.write(package + '==' + pip_reqs[package] + '\n')
                 else:
                     f.write(package + '\n')
