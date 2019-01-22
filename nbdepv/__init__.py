@@ -17,8 +17,7 @@ class ImportWatcher(object):
     def __init__(self,ip):
         import sys
         import logging
-        from ipykernel.comm import Comm
-        self.comm = Comm(target_name='nbdepv', data={})
+        self.comm = None
         self.sys = sys
         self.shell = ip
         self.modules = list(sys.modules) #self.get_top_levels(list(sys.modules))
@@ -34,6 +33,9 @@ class ImportWatcher(object):
     #     return top_levels
 
     def grab_modules(self):
+        if self.comm == None:
+            from ipykernel.comm import Comm
+            self.comm = Comm(target_name='nbdepv', data={})
         new_mods = list(self.sys.modules) #self.get_top_levels(list(self.sys.modules))
         incoming = set(new_mods) - set(self.modules)
         self.modules = new_mods
