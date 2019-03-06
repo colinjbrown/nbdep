@@ -82,7 +82,7 @@ def _jupyter_bundlerextension_paths():
         # module containing bundle function
         "module_name": "nbdepv.pip_export",
         # human-redable menu item label
-        "label": "Produce requirements.txt",
+        "label": "Produce Environment.yml file",
         # group under 'deploy' or 'download' menu
         "group": "deploy",
     }

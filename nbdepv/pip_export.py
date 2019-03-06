@@ -1,12 +1,26 @@
 import os
 from stdlib_list import stdlib_list
 from nbdepv.load_data import load
+from collections import defaultdict
 import requests
 from distutils.version import LooseVersion
+from platform import system#, machine
+import sys
 
-top,subs,mongo_flag,versions = load()
+#Setting this flag to false will stop the use of conda channels entirely
+conda = True
+#This will prioritize the main channel followed by the forge channel and then followed by the free channel
+conda_channel_names = ['main','forge','free']
+
+#This is a maintained blacklist for package names that used to be their own packages but now are part of another package
+blacklist = ['mtrand']
+
+#Translates names of certain packages that are maintained only as aliases in other packages
+#IE if you try and import py.test it will actually load the pytest module into sys.modules as py.test
+translate_list = {'py.test':'pytest'}
+
+top,subs,mongo_flag,versions,conda_channels = load(conda,conda_channel_names)
 deps = {}
-
 
 def export_reqs(file,fname):
     pip_reqs = {}
@@ -27,14 +41,15 @@ def export_reqs(file,fname):
         return False
 
     def process_obj(df, key, dep, version, sub_flag):
+        if dep in translate_list:
+            dep = translate_list[dep]
         if invalidate_dep(dep,sub_flag):
             return
-
         candidates = df[(df[key] == dep)]
         if (len(candidates) == 0):
             if (sub_flag):
                 # No candidates try parent module
-                process_obj(top, 'top_level_module', dep.split('.')[0], version, False)
+                process_obj(top, 'module', dep.split('.')[0], version, False)
                 return
             add_pip(dep, version)
         elif (len(candidates) == 1):
@@ -66,6 +81,8 @@ def export_reqs(file,fname):
 
 
     def process_mongo(mongo, key, dep, version, sub_flag):
+        if dep in translate_list:
+            dep = translate_list[dep]
         if invalidate_dep(dep, sub_flag):
             return
         try:
@@ -76,9 +93,7 @@ def export_reqs(file,fname):
                 # No candidates try parent module
                 top_level = dep.split('.')[0]
                 if top_level not in deps:
-                    process_mongo(top, 'top_level_module', top_level, version, False)
-                #return
-            #add_pip(dep, version)
+                    process_mongo(top, 'module', top_level, version, False)
             return
         if version == "Unknown":
             add_pip(dep, version)
@@ -113,73 +128,125 @@ def export_reqs(file,fname):
                 top_levels.append(dep)
             elif dep.count('.') == 1:
                 submods.append(dep)
-        for top_level in top.find({'top_level_module':{'$in':top_levels}}):
-            dep = top_level['top_level_module']
+        for top_level in top.find({'module':{'$in':top_levels}}):
+            dep = top_level['module']
             version = deps[dep]
             packages = top_level['packages']
-            valid_candidates = [k for k in packages if version in packages[k]]
+            valid_candidates = [k['package'] for k in packages if version in k['versions']]
             process_mongo_new(dep,version,valid_candidates,packages)
         completed_submods = []
         for submod in subs.find({'submodule':{'$in':submods}}):
             dep = submod['submodule']
             version = deps[dep]
             packages = submod['packages']
-            valid_candidates = [k for k in packages if version in packages[k]]
+            valid_candidates = [k['package'] for k in packages if version in k['versions']]
             process_mongo_new(dep,version,valid_candidates,packages)
             completed_submods.append(dep)
         #No reason to query the same things twice, but if we can't find a submodule we should try querying it's top level module
         final_top_set = [i for i in [i.split('.')[0] for i in set(submods) - set(completed_submods)] if i not in top_levels]
-        for top_level in top.find({'top_level_module':{'$in':final_top_set}}):
-            dep = top_level['top_level_module']
+        for top_level in top.find({'module':{'$in':final_top_set}}):
+            dep = top_level['module']
             version = deps[dep]
             packages = top_level['packages']
-            valid_candidates = [k for k in packages if version in packages[k]]
+            valid_candidates = [k['package'] for k in packages if version in k['versions']]
             process_mongo_new(dep,version,valid_candidates,packages)
     else:
         for dep, version in deps.items():
             if dep.count('.') == 0:
                 if mongo_flag:
-                    process_mongo(top,'top_level_module',dep, version, False)
+                    process_mongo(top,'module',dep, version, False)
                 else:
-                    process_obj(top, 'top_level_module', dep, version, False)
+                    process_obj(top, 'module', dep, version, False)
             elif dep.count('.') == 1:
                 if mongo_flag:
                     process_mongo(subs,'submodule',dep,version,False)
                 else:
                     process_obj(subs, 'submodule', dep, version, True)
 
-    #Validate everything on the backend with pypi
-    with open('requirements.txt', 'w') as f:
-        if versions != None:
-            #Have to convert to a list otherwise will throw a bson error
-            for version in versions.aggregate([{'$match':{'package':{'$in':list(pip_reqs.keys())}}},{'$unwind':'$versions'},{'$group':{'_id':'$package','versions':{'$addToSet':'$versions.version'}}}]):
-                #Mongo has some weird requirement for aggregation objects so we use _id
-                package = version['_id']
-                if package in libraries:
+    for key in list(pip_reqs):
+        if key in blacklist:
+            pip_reqs.pop(key)
+
+    os_mapping = {'Darwin': 'OSX', 'Windows': 'Win', 'Linux': 'Linux', 'ppc64le': 'Linuxppc'}
+    os_mapping = defaultdict(lambda: 'NoArchNA', os_mapping)
+
+    os_key = os_mapping[system()]
+
+    if os_key != 'NoArchNA':
+        os_key += '64' if sys.maxsize > 2 ** 32 else '32'
+
+    conda_packages = defaultdict(list)
+
+    for channel,channel_name in zip(conda_channels,conda_channel_names):
+        for c_package in channel.find({'package':{'$in':list(pip_reqs.keys())}}):
+            if pip_reqs[c_package['package']] in c_package[os_key]:
+                conda_packages[channel_name].append(c_package['package']+'='+pip_reqs.pop(c_package['package']))
+
+    if conda_packages:
+        with open('environment.yml','w') as f:
+            f.write('#Operating System produced under:'+os_key+'\n')
+            f.write('name: '+fname[:-len('.ipynb')]+'\n')
+            channel_flag = False
+            for key in conda_packages:
+                if key in ['main','free']:
                     continue
-                if pip_reqs[package] in version['versions']:
-                    f.write(package + '==' + pip_reqs[package] + '\n')
-                else:
-                    f.write(package + '\n')
-        else:
-            for k, v in pip_reqs.items():
-                if v == 'Unknown':
-                    r = requests.head("https://pypi.org/pypi/{}/json"
-                                             .format(k))
-                    if r.status_code == 200:
-                        f.write(k + '\n')
-                else:
-                    r = requests.head("https://pypi.org/pypi/{}/{}/json"
-                                             .format(k, v))
-                    if r.status_code == 200:
-                        f.write(k + '==' + v + '\n')
+                if not channel_flag:
+                    f.write('channels:\n')
+            f.write('dependencies:\n')
+            f.write('  - python='+py_version+'\n')
+            for k,v in conda_packages.items():
+                for dep in v:
+                    f.write('  - '+dep+'\n')
+            if versions != None and len(pip_reqs) > 0:
+                #Have to convert to a list otherwise will throw a bson error
+                #Need to only write in the case that there are valid versions
+                pip_write = False
+                for version in versions.aggregate([{'$match':{'package':{'$in':list(pip_reqs.keys())}}},{'$unwind':'$versions'},{'$group':{'_id':'$package','versions':{'$addToSet':'$versions.version'}}}]):
+                    #Mongo has some weird requirement for aggregation objects so we use _id
+                    package = version['_id']
+                    if package in libraries:
+                        continue
+                    if not pip_write:
+                        f.write('  - pip:\n')
+                    if pip_reqs[package] in version['versions']:
+                        f.write('    - '+package + '==' + pip_reqs[package] + '\n')
                     else:
-                        r = requests.head("https://pypi.org/pypi/{}/json"
-                                                 .format(k))
-                        if r.status_code == 200:
-                            f.write(k + '\n')
+                        f.write('    - '+package + '\n')
         dir_name, _ = os.path.split(os.path.abspath(fname))
-        return os.path.join(dir_name,'requirements.txt')
+        return os.path.join(dir_name, 'environment.yml')
+    else:
+        #Validate everything on the backend with pypi
+        with open('requirements.txt', 'w') as f:
+            if versions != None:
+                #Have to convert to a list otherwise will throw a bson error
+                for version in versions.aggregate([{'$match':{'package':{'$in':list(pip_reqs.keys())}}},{'$unwind':'$versions'},{'$group':{'_id':'$package','versions':{'$addToSet':'$versions.version'}}}]):
+                    #Mongo has some weird requirement for aggregation objects so we use _id
+                    package = version['_id']
+                    if package in libraries:
+                        continue
+                    if pip_reqs[package] in version['versions']:
+                        f.write(package + '==' + pip_reqs[package] + '\n')
+                    else:
+                        f.write(package + '\n')
+            # else:
+            #     for k, v in pip_reqs.items():
+            #         if v == 'Unknown':
+            #             r = requests.head("https://pypi.org/pypi/{}/json"
+            #                                      .format(k))
+            #             if r.status_code == 200:
+            #                 f.write(k + '\n')
+            #         else:
+            #             r = requests.head("https://pypi.org/pypi/{}/{}/json"
+            #                                      .format(k, v))
+            #             if r.status_code == 200:
+            #                 f.write(k + '==' + v + '\n')
+            #             else:
+            #                 r = requests.head("https://pypi.org/pypi/{}/json"
+            #                                          .format(k))
+            #                 if r.status_code == 200:
+            #                     f.write(k + '\n')
+            dir_name, _ = os.path.split(os.path.abspath(fname))
+            return os.path.join(dir_name,'requirements.txt')
     return 'UnexpectedError'
 
 
