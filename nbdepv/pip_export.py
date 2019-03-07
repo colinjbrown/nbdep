@@ -64,8 +64,13 @@ def export_reqs(file,fname):
     libraries = stdlib_list(py_version)
 
     def add_pip(dep, version):
-        # pip_reqs.add(dep)
-        pip_reqs[dep] = version
+        #We always want the lower version as our upper limit
+        if dep in pip_reqs:
+            # If we don't know a version then we just use Unknown as a placeholder
+            if pip_reqs[dep] == 'Unknown' or _comparable_version(pip_reqs[dep]) > _comparable_version(version):
+                pip_reqs[dep] = version
+        else:
+            pip_reqs[dep] = version
 
     def invalidate_dep(dep,sub_flag):
         if dep.startswith('_'):
