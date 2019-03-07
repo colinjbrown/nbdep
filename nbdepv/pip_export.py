@@ -246,7 +246,11 @@ def export_reqs(file,fname):
             f.write('  - python='+py_version+'\n')
             for k,v in conda_packages.items():
                 for dep in v:
-                    f.write('  - '+dep+'\n')
+                    output_str = ''
+                    if dep[0] == 'notebook':
+                        output_str += '#'
+                    output_str += '  - '+dep[0]+'='+dep[1]+'\n'
+                    f.write(output_str)
             if versions != None and len(pip_reqs) > 0:
                 #Have to convert to a list otherwise will throw a bson error
                 #Need to only write in the case that there are valid versions
