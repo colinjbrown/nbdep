@@ -117,6 +117,19 @@ def export_reqs(file,fname):
         else:
             add_pip(dep, version)
 
+    def process_mongo_subs(dep,valid_candidates,packages):
+        dep = dep.split('.')[0]
+        if valid_candidates:
+            if len(valid_candidates) > 1:
+                if dep in packages:
+                    print(dep,valid_candidates[packages.index(dep)])
+                    add_pip(dep, valid_candidates[packages.index(dep)][1])
+                else:
+                    add_pip(valid_candidates[0][0], valid_candidates[0][1])
+            else:
+                add_pip(valid_candidates[0][0], valid_candidates[0][1])
+        else:
+            add_pip(dep, "Unknown")
 
     def process_mongo(mongo, key, dep, version, sub_flag):
         if invalidate_dep(dep, sub_flag):
@@ -179,24 +192,24 @@ def export_reqs(file,fname):
         for top_level in top.find({'module':{'$in':top_levels}}):
             dep = top_level['module']
             version = deps[dep]
-            packages = top_level['packages']
-            valid_candidates = [k['package'] for k in packages if version in k['versions']]
+            packages = [k['package'] for k in top_level['packages']]
+            valid_candidates = [k['package'] for k in top_level['packages'] if version in k['versions']]
             process_mongo_new(dep,version,valid_candidates,packages)
         completed_submods = []
         for submod in subs.find({'submodule':{'$in':submods}}):
             dep = submod['submodule']
             version = deps[dep]
-            packages = submod['packages']
-            valid_candidates = [k['package'] for k in packages if version in k['versions']]
-            process_mongo_new(dep,version,valid_candidates,packages)
+            packages = [k['package'] for k in submod['packages']]
+            valid_candidates = [(k['package'],str(sorted(k['versions'],key=_comparable_version)[-1])) for k in submod['packages']]
+            process_mongo_subs(dep,valid_candidates,packages)
             completed_submods.append(dep)
         #No reason to query the same things twice, but if we can't find a submodule we should try querying it's top level module
         final_top_set = [i for i in [i.split('.')[0] for i in set(submods) - set(completed_submods)] if i not in top_levels]
         for top_level in top.find({'module':{'$in':final_top_set}}):
             dep = top_level['module']
             version = deps[dep]
-            packages = top_level['packages']
-            valid_candidates = [k['package'] for k in packages if version in k['versions']]
+            packages = [k['package'] for k in top_level['packages']]
+            valid_candidates = [k['package'] for k in top_level['packages'] if version in k['versions']]
             process_mongo_new(dep,version,valid_candidates,packages)
     else:
         for dep, version in deps.items():
@@ -230,7 +243,7 @@ def export_reqs(file,fname):
     for channel,channel_name in zip(conda_channels,conda_channel_names):
         for c_package in channel.find({'package':{'$in':list(pip_reqs.keys())}}):
             if pip_reqs[c_package['package']] in c_package[os_key]:
-                conda_packages[channel_name].append(c_package['package']+'='+pip_reqs.pop(c_package['package']))
+                conda_packages[channel_name].append((c_package['package'],pip_reqs.pop(c_package['package'])))
 
     if conda_packages:
         with open('environment.yml','w') as f:
