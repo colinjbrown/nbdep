@@ -13,7 +13,8 @@ conda = True
 conda_channel_names = ['main','forge','free']
 
 #This is a maintained blacklist for package names that used to be their own packages but now are part of another package
-blacklist = ['mtrand']
+#Anyone who wants to install mkl-fft seperately from pypi should do so but the conda equivalent is preferred
+blacklist = ['mtrand','mkl-fft']
 
 #Translates names of certain packages that are maintained only as aliases in other packages
 #IE if you try and import py.test it will actually load the pytest module into sys.modules as py.test
