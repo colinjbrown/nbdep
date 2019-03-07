@@ -155,6 +155,16 @@ def export_reqs(file,fname):
             else:
                 deps[dep] = session['deps'][dep]
 
+
+    #FIXME: Do something better here to record IPYthon version maybe, perhaps as one of the initial steps in recording
+    if 'IPython' not in deps:
+        from IPython import __version__ as ipyv
+        deps['IPython'] = ipyv
+    if 'ipykernel' not in deps:
+        from ipykernel import __version__ as ipykv
+        deps['ipykernel'] = ipykv
+
+
     if mongo_flag:
         top_levels = []
         submods = []
@@ -248,6 +258,7 @@ def export_reqs(file,fname):
                         continue
                     if not pip_write:
                         f.write('  - pip:\n')
+                        pip_write = True
                     if pip_reqs[package] in version['versions']:
                         f.write('    - '+package + '==' + pip_reqs[package] + '\n')
                     else:
@@ -268,6 +279,7 @@ def export_reqs(file,fname):
                         f.write(package + '==' + pip_reqs[package] + '\n')
                     else:
                         f.write(package + '\n')
+            #FIXME: Do something about alternative methodology used here for verifying packages
             # else:
             #     for k, v in pip_reqs.items():
             #         if v == 'Unknown':
@@ -298,6 +310,7 @@ def bundle(handler, model):
     start = time.time()
     handler.finish('File Exported As: {}, Time taken: {}, Mode: {}'.format(export_reqs(notebook_content, notebook_filename),time.time()-start,'Mongo' if mongo_flag else 'Flat File'))
 
+#FIXME: Write up this better in the case that a user might want to use this from the command line
 # if __name__ == "__main__":
 #     import sys
 #     if len(sys.argv) < 2:
