@@ -81,8 +81,6 @@ def export_reqs(file,fname):
         return False
 
     def process_obj(df, key, dep, version, sub_flag):
-        if dep in translate_list:
-            dep = translate_list[dep]
         if invalidate_dep(dep,sub_flag):
             return
         candidates = df[(df[key] == dep)]
@@ -121,8 +119,6 @@ def export_reqs(file,fname):
 
 
     def process_mongo(mongo, key, dep, version, sub_flag):
-        if dep in translate_list:
-            dep = translate_list[dep]
         if invalidate_dep(dep, sub_flag):
             return
         try:
@@ -164,6 +160,8 @@ def export_reqs(file,fname):
         submods = []
         #Seperate these so we can do a single query
         for dep in deps:
+            if dep in translate_list:
+                dep = translate_list[dep]
             if dep.count('.') == 0:
                 top_levels.append(dep)
             elif dep.count('.') == 1:
@@ -192,6 +190,8 @@ def export_reqs(file,fname):
             process_mongo_new(dep,version,valid_candidates,packages)
     else:
         for dep, version in deps.items():
+            if dep in translate_list:
+                dep = translate_list[dep]
             if dep.count('.') == 0:
                 if mongo_flag:
                     process_mongo(top,'module',dep, version, False)
