@@ -2,10 +2,10 @@ import os
 from stdlib_list import stdlib_list
 from nbdepv.load_data import load
 from collections import defaultdict
-import requests
-from distutils.version import LooseVersion
-from platform import system#, machine
+#import requests
+from platform import system
 import sys
+import re
 
 #Setting this flag to false will stop the use of conda channels entirely
 conda = True
@@ -19,6 +19,40 @@ blacklist = ['mtrand','mkl-fft']
 #Translates names of certain packages that are maintained only as aliases in other packages
 #IE if you try and import py.test it will actually load the pytest module into sys.modules as py.test
 translate_list = {'py.test':'pytest'}
+
+# Taken from https://github.com/python/cpython/commit/7d81e8f5995df6980a1a02923e224a481375f130
+# See https://bugs.python.org/issue14894
+
+# Helper for comparing two version number strings.
+# Based on the description of the PHP's version_compare():
+# http://php.net/manual/en/function.version-compare.php
+
+_ver_stages = {
+    # any string not found in this dict, will get 0 assigned
+    'dev': 10,
+    'alpha': 20, 'a': 20,
+    'beta': 30, 'b': 30,
+    'c': 40,
+    'RC': 50, 'rc': 50,
+    # number, will get 100 assigned
+    'pl': 200, 'p': 200,
+}
+
+_component_re = re.compile(r'([0-9]+|[._+-])')
+
+
+def _comparable_version(version):
+    result = []
+    for v in _component_re.split(version):
+        if v not in '._+-':
+            try:
+                v = int(v, 10)
+                t = 100
+            except ValueError:
+                t = _ver_stages.get(v, 0)
+            result.extend((t, v))
+    return result
+
 
 top,subs,mongo_flag,versions,conda_channels = load(conda,conda_channel_names)
 deps = {}
@@ -115,7 +149,7 @@ def export_reqs(file,fname):
     for session in file['metadata']['dependencies']:
         for dep in session['deps']:
             if dep in deps:
-                if LooseVersion(deps[dep]) < LooseVersion(session['deps'][dep]):
+                if _comparable_version(deps[dep]) < _comparable_version(session['deps'][dep]):
                     deps[dep] = session['deps'][dep]
             else:
                 deps[dep] = session['deps'][dep]
