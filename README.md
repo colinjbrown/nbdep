@@ -1,4 +1,4 @@
-# nbdepv
+# nbdep
 
 This module automatically grabs and saves any imported modules into the metadata of the Notebook, everything is passed over the Jupyter kernel comm channel after the execution of each cell.
 
@@ -9,23 +9,23 @@ This package also includes a nbextension that writes out a pip requirements file
 ## Installation
 `pip install .`
 
-`jupyter nbextension install --py nbdepv --[user|sys-prefix]`
+`jupyter nbextension install --py nbdep --[user|sys-prefix]`
 
-`jupyter nbextension enable nbdepv --py --[user|sys-prefix]`
+`jupyter nbextension enable nbdep --py --[user|sys-prefix]`
 
 This package relies on IPython magics so either
 
-`%load_ext nbdepv` 
+`%load_ext nbdep` 
 
 is required upon opening each notebook; the nbextension doesn't handle any events if the IPython extension is not enabled.
 
 To ensure that the extension is loaded each time you open a new notebook then you should edit your configuration file to include the following line:
 
 `c.InteractiveShellApp.extensions = [
-    'nbdepv'
+    'nbdep'
 ]`
 
 ## Add bundler extension for requirements.txt deployment
 
-`jupyter bundlerextension enable --sys-prefix --py nbdepv`
+`jupyter bundlerextension enable --sys-prefix --py nbdep`
 
