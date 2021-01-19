@@ -7,8 +7,8 @@ except:
     long_desc = ''
 
 setup(
-    name="nbdepv",
-    url="https://github.com/colinjbrown/nbdepv",
+    name="nbdep",
+    url="https://github.com/colinjbrown/nbdep",
     author="Colin Brown",
     author_email="cbrown12@umassd.edu",
     version="0.0.1",

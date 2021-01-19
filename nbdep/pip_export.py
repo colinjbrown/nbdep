@@ -1,6 +1,6 @@
 import os
 from stdlib_list import stdlib_list
-from nbdepv.load_data import load
+from nbdep.load_data import load
 from collections import defaultdict
 #import requests
 from platform import system

@@ -1,5 +1,5 @@
 #Colin Brown 2018
-#Ipython Magic portion of NBDepv
+#Ipython Magic portion of NBDep
 
 def _jupyter_server_extension_paths():
     """Magically-named function for jupyter extension installations."""
@@ -10,8 +10,8 @@ def _jupyter_nbextension_paths():
     return [dict(
         section="notebook",
         src="static",
-        dest="nbdepv",
-        require="nbdepv/index")]
+        dest="nbdep",
+        require="nbdep/index")]
 
 class ImportWatcher(object):
     def __init__(self,ip):
@@ -35,7 +35,7 @@ class ImportWatcher(object):
     def grab_modules(self):
         if self.comm == None:
             from ipykernel.comm import Comm
-            self.comm = Comm(target_name='nbdepv', data={})
+            self.comm = Comm(target_name='nbdep', data={})
         new_mods = list(self.sys.modules) #self.get_top_levels(list(self.sys.modules))
         incoming = set(new_mods) - set(self.modules)
         self.modules = new_mods
@@ -80,7 +80,7 @@ def _jupyter_bundlerextension_paths():
         # unique bundler name
         "name": "reqs-export",
         # module containing bundle function
-        "module_name": "nbdepv.pip_export",
+        "module_name": "nbdep.pip_export",
         # human-redable menu item label
         "label": "Produce Environment.yml file",
         # group under 'deploy' or 'download' menu

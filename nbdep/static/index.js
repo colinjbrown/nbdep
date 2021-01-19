@@ -43,12 +43,12 @@ define([
                 )
             };
 
-            comm_manager.register_target('nbdepv', function(comm,msg){
+            comm_manager.register_target('nbdep', function(comm,msg){
                 // register callback
                 comm.on_msg(handle_msg)
             });
 
-	        // var text = '%load_ext nbdepv';
+	        // var text = '%load_ext nbdep';
 	        // var callbacks = null;
 	        // var msg_id = nb.kernel.execute(text, callbacks, {silent: false, store_history: true,
             // stop_on_error : true});
