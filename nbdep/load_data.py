@@ -3,17 +3,17 @@ def load(conda_flag,conda_channels):
     versions = None
     conda = []
     try:
-        client = pymongo.MongoClient("mongodb://public1:public1@ds145848.mlab.com:45848/pypi_mod_index",serverSelectionTimeoutMS=5000)
+        client = pymongo.MongoClient("mongodb://public1:public1@23.234.231.89:12438/pypi_mod_index",serverSelectionTimeoutMS=5000)
         client.server_info()
         mongo_flag = True
         db = client["pypi_mod_index"]
         top = db['modules']
         subs = db['submodules']
-        v_client = pymongo.MongoClient("mongodb://public1:public1@ds153314.mlab.com:53314/pypi3",serverSelectionTimeoutMS=5000)
+        v_client = pymongo.MongoClient("mongodb://public1:public1@23.234.231.89:12438/pypi3",serverSelectionTimeoutMS=5000)
         v_db = v_client["pypi3"]
         versions = v_db['versions']
         if conda_flag:
-            conda_client = pymongo.MongoClient("mongodb://public1:public1@ds135760.mlab.com:35760/os_pypi_conda",
+            conda_client = pymongo.MongoClient("mongodb://public1:public1@23.234.231.89:12438/os_pypi_conda",
                                            serverSelectionTimeoutMS=5000)
             conda_db = conda_client['os_pypi_conda']
             for channel in conda_channels:
